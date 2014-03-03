@@ -1,4 +1,3 @@
-from flask import Flask, render_template, request
 import urllib3
 from urllib import quote
 from hashlib import sha1
@@ -7,18 +6,8 @@ import json
 import uuid
 import hmac
 import base64
-app = Flask(__name__)
 
-
-@app.route('/')
-def hello_world():
-    # return url_for('get_tweets') + 'Hello There'
-    return render_template('home.html')
-
-@app.route('/get_tweets', methods=["GET"])
-def get_tweets():
-    hashtag = request.args['hashtag']
-    return 'Tweets for ' + hashtag
+signingkey = ""
 
 def do_request(reqtype, url, fields):
     nonce = get_nonce()
@@ -56,11 +45,11 @@ def getoauthheader(sig, oauthfields):
 
 
 def get_signature(rtype, url, oauthfields, fields):
-
+    global signingkey
 
     parm_string = get_parameterstring(oauthfields, fields)
     sig_base = rtype + '&' + quote(url,safe='') + '&' + quote(parm_string,safe='')
-
+    print signingkey
     return base64.b64encode(hmac.new(signingkey, sig_base, sha1).digest())
 
 
@@ -93,12 +82,19 @@ def get_nonce():
     return uuid.uuid1().hex
 
 def tst_get_sig():
-    oauthfields = {'oauth_consumer_key':'xvz1evFS4wEEPTGEFPHBog',
+
+    # using the know values off the twitter website
+    # This was tricky to debug until these unit tests, and then it was easy
+    # Testament to TDD
+
+    oauthfields = {
+              'oauth_consumer_key':'xvz1evFS4wEEPTGEFPHBog',
               'oauth_nonce': 'kYjzVBB8Y0ZFabxSWbWovY3uYSQ2pTgmZeNu2VS4cg',
               'oauth_signature_method':'HMAC-SHA1',
               'oauth_timestamp': '1318622958',
               'oauth_token':'370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb',
-              'oauth_version':'1.0'}
+              'oauth_version':'1.0'
+             }
 
     fields = {'include_entities': 'true',
               'status': 'Hello Ladies + Gentlemen, a signed OAuth request!'}
@@ -124,12 +120,14 @@ def get_tweets(ticker):
     tweets = json.loads(res)
     pass
 
+def setsigningkey():
+    secrets = json.loads(open('secrets').read())
+    global signingkey
+    signingkey = quote(secrets['appsecret'],safe='') + '&' + quote(secrets['usersecret'],safe='')
 
 if __name__ == '__main__':
 
-    secrets = json.loads(open('secrets').read())
-
-    signingkey = quote(secrets['appsecret'],safe='') + '&' + quote(secrets['usersecret'],safe='')
+    setsigningkey()
 
     #tst_get_sig
     get_tweets('IBM')
