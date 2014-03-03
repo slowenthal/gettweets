@@ -49,7 +49,6 @@ def get_signature(rtype, url, oauthfields, fields):
 
     parm_string = get_parameterstring(oauthfields, fields)
     sig_base = rtype + '&' + quote(url,safe='') + '&' + quote(parm_string,safe='')
-    print signingkey
     return base64.b64encode(hmac.new(signingkey, sig_base, sha1).digest())
 
 
@@ -117,7 +116,11 @@ def tst_get_sig():
 
 def get_tweets(ticker):
     res = do_request('GET','https://api.twitter.com/1.1/search/tweets.json',{'q':'#' + ticker,'count':'100'})
-    tweets = json.loads(res)
+    resobject = json.loads(res)
+    statuses = resobject['statuses']
+    for status in statuses:
+        print  status['created_at'] + " " + status['user']['screen_name'] + " " + status['text']
+
     pass
 
 def setsigningkey():
@@ -130,7 +133,7 @@ if __name__ == '__main__':
     setsigningkey()
 
     #tst_get_sig
-    get_tweets('IBM')
+    get_tweets('ORCL')
 
 
 
